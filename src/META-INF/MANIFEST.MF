@@ -1,4 +1,4 @@
 Manifest-Version: 1.0
-Class-Path: lib/* *
-Main-Class: Main
+Class-Path: SoapUIWrapper.jar; lib\*;
+Main-Class: com.norg.wrapper.Main
 
