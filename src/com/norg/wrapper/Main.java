@@ -9,12 +9,18 @@ import java.util.Arrays;
 import java.util.List;
 
 public class Main {
-    private static final long TIMEOUT = 60_000; //1 minute
+    private static final long DEFAULT_TIMEOUT = 60_000; //1 minute
+    public static final int WAIT_FOR_MOCKS = 15_000;
+
 
     public static void main(String[] args) throws Exception {
-        String path = args[args.length-1];
+        String path = args[args.length-2];
+        int timeout = Integer.parseInt(args[args.length-1]) * 1000;
+        System.out.println("Timeout: " + timeout + " ms");
 
-        final String[] arg = Arrays.copyOf(args, args.length-1);
+        assert (timeout < WAIT_FOR_MOCKS);
+
+        final String[] arg = Arrays.copyOf(args, args.length-2);
         SoapUIMockServiceRunner runner = new SoapUIMockServiceRunner();
         if (runner.validateCommandLineArgument(arg)) {
 
@@ -24,7 +30,11 @@ public class Main {
 
             File shutdown = new File(path);
             long startTime = System.currentTimeMillis();
-            while(!shutdown.exists() || isEnabled(runner) || (System.currentTimeMillis()-startTime < TIMEOUT)) {
+            //ждем поднятия моков
+            while((System.currentTimeMillis()-startTime < WAIT_FOR_MOCKS) && !isEnabled(runner)) {
+                Thread.sleep(1000);
+            }
+            while(!shutdown.exists() && isEnabled(runner) && (System.currentTimeMillis()-startTime < timeout)) {
                 Thread.sleep(1000);
             }
 
@@ -41,7 +51,7 @@ public class Main {
     }
 
     public static boolean isEnabled(SoapUIMockServiceRunner runner) throws NoSuchFieldException, IllegalAccessException {
-        Field runnersField = runner.getClass().getField("runners");
+        Field runnersField = runner.getClass().getDeclaredField("runners");
         runnersField.setAccessible(true);
         List<MockRunner> runners = (List<MockRunner>) runnersField.get(runner);
         for (MockRunner run :
