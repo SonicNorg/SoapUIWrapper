@@ -2,26 +2,25 @@ package com.norg.wrapper;
 
 import com.eviware.soapui.model.mock.MockRunner;
 import com.eviware.soapui.tools.*;
+import org.apache.log4j.Logger;
 
 import java.io.File;
 import java.lang.reflect.Field;
 import java.util.Arrays;
 import java.util.List;
-
 public class Main {
     private static final long DEFAULT_TIMEOUT = 60_000; //1 minute
-    public static final int WAIT_FOR_MOCKS = 15_000;
-
+    public static final int WAIT_FOR_MOCKS = 30_000;
+    private static Logger log;
 
     public static void main(String[] args) throws Exception {
         String path = args[args.length-2];
         int timeout = Integer.parseInt(args[args.length-1]) * 1000;
-        System.out.println("Timeout: " + timeout + " ms");
-
-        assert (timeout < WAIT_FOR_MOCKS);
 
         final String[] arg = Arrays.copyOf(args, args.length-2);
         SoapUIMockServiceRunner runner = new SoapUIMockServiceRunner();
+        log = runner.getLog();
+        log.info("Timeout: " + timeout + " ms");
         if (runner.validateCommandLineArgument(arg)) {
 
             Thread daemon = new Thread(() -> runner.run(arg));
@@ -31,6 +30,7 @@ public class Main {
             File shutdown = new File(path);
             long startTime = System.currentTimeMillis();
             //ждем поднятия моков
+            log.debug("Waiting "+WAIT_FOR_MOCKS+" ms while mock-services get running");
             while((System.currentTimeMillis()-startTime < WAIT_FOR_MOCKS) && !isEnabled(runner)) {
                 Thread.sleep(1000);
             }
@@ -38,7 +38,11 @@ public class Main {
                 Thread.sleep(1000);
             }
 
-            System.out.println("Terminating...");
+            log.debug("Active mocks = 0? " + !isEnabled(runner));
+            log.debug("Shutdown file found? " + shutdown.exists());
+            log.debug("Timeout? " + (System.currentTimeMillis()-startTime >= timeout));
+
+            log.info("Terminating...");
             if(shutdown.exists()) {
                 shutdown.delete();
             }
@@ -50,6 +54,7 @@ public class Main {
         System.exit(0);
     }
 
+    @SuppressWarnings("unchecked")
     public static boolean isEnabled(SoapUIMockServiceRunner runner) throws NoSuchFieldException, IllegalAccessException {
         Field runnersField = runner.getClass().getDeclaredField("runners");
         runnersField.setAccessible(true);
