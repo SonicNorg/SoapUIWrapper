@@ -10,7 +10,7 @@ import java.util.Arrays;
 import java.util.List;
 public class Main {
     private static final long DEFAULT_TIMEOUT = 60_000; //1 minute
-    public static final int WAIT_FOR_MOCKS = 30_000;
+    public static final long WAIT_FOR_MOCKS = DEFAULT_TIMEOUT;
     private static Logger log;
 
     public static void main(String[] args) throws Exception {
